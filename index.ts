@@ -38,8 +38,9 @@ const MAX_BODY_LINES = 8;
 const MAX_TEXT_CHARS = 1200;
 /** Same left inset pi uses for transcript messages (outputPad). */
 const CONTENT_INDENT = 1;
-/** Keep long prompts readable on wide terminals instead of spanning the screen. */
-const MAX_CONTENT_WIDTH = 80;
+/** The block follows the page width at this ratio, so it reflows on resize. */
+const CONTENT_WIDTH_RATIO = 0.66;
+const MIN_CONTENT_WIDTH = 40;
 
 type Placement = "widget" | "overlay";
 type TimeUnit = "s" | "m" | "h";
@@ -263,7 +264,8 @@ function bannerLines(
 ): string[] {
 	const safeWidth = Math.max(12, width);
 	// One column of inset, matching pi's transcript padding (outputPad: 1).
-	const contentWidth = Math.max(8, Math.min(safeWidth - CONTENT_INDENT, MAX_CONTENT_WIDTH));
+	const available = Math.max(8, safeWidth - CONTENT_INDENT);
+	const contentWidth = Math.min(available, Math.max(MIN_CONTENT_WIDTH, Math.round(available * CONTENT_WIDTH_RATIO)));
 	const ruleWidth = Math.max(8, Math.floor(contentWidth / 3));
 	const indent = " ".repeat(CONTENT_INDENT);
 	// Caption and body hang one space further in than the rule.
