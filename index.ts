@@ -38,9 +38,12 @@ const MAX_BODY_LINES = 8;
 const MAX_TEXT_CHARS = 1200;
 /** Same left inset pi uses for transcript messages (outputPad). */
 const CONTENT_INDENT = 1;
-/** The block follows the page width at this ratio, so it reflows on resize. */
-const CONTENT_WIDTH_RATIO = 0.66;
+/** One column of margin on each side of the block. */
+const CONTENT_MARGIN = 1;
+/** Below this, two thirds would be too narrow, so the block fills the page. */
 const MIN_CONTENT_WIDTH = 40;
+/** On wide terminals the block stops growing here. */
+const MAX_CONTENT_WIDTH = 80;
 
 type Placement = "widget" | "overlay";
 type TimeUnit = "s" | "m" | "h";
@@ -263,9 +266,13 @@ function bannerLines(
 	bodyBrightness: number,
 ): string[] {
 	const safeWidth = Math.max(12, width);
-	// One column of inset, matching pi's transcript padding (outputPad: 1).
-	const available = Math.max(8, safeWidth - CONTENT_INDENT);
-	const contentWidth = Math.min(available, Math.max(MIN_CONTENT_WIDTH, Math.round(available * CONTENT_WIDTH_RATIO)));
+	// Symmetric margins, so the block never touches either edge.
+	const usable = Math.max(8, safeWidth - CONTENT_MARGIN * 2);
+	// Narrow: fill the page (margins only). Middle: two thirds of it.
+	// Wide: stop at MAX_CONTENT_WIDTH.
+	const preferred = Math.round((usable * 2) / 3);
+	const contentWidth =
+		preferred < MIN_CONTENT_WIDTH ? usable : Math.min(MAX_CONTENT_WIDTH, preferred);
 	const ruleWidth = Math.max(8, Math.floor(contentWidth / 3));
 	const indent = " ".repeat(CONTENT_INDENT);
 	// Caption and body hang one space further in than the rule.
