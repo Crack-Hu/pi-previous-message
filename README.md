@@ -6,8 +6,13 @@ you remember what you asked when you come back to a session.
 ```
  ───────────────────────
   previous message · 23 min ago
-  hello world…
+  hello world
 ```
+
+When the available width can hold the whole message, it stays on a single line
+and the block uses the full width. Only messages too long for the full width
+fall back to the narrow block (two thirds of the page, capped at 80 columns),
+wrapped and cut off at `SetLines` lines with `…`.
 
 Typing does not dismiss it; sending a message with Enter does.
 
@@ -42,7 +47,7 @@ Settings are arguments of the same command:
 
 | Argument | Meaning |
 |---|---|
-| `SetLines <1-8>` | How many lines of the message to show. Longer text ends with `…`. |
+| `SetLines <1-8>` | How many lines of the message to show when it does not fit on one line. Longer text ends with `…`. |
 | `SetInterval <time>` | How long without keystrokes or agent output before it appears. Accepts `30s`, `5m`, `2h`, or a bare number of minutes. The unit you use is also used in the "ago" caption. |
 | `SetPlacement <widget\|overlay>` | `widget` sits above the editor as a normal layout row; `overlay` floats at the top edge of the terminal. |
 | `SetAutoShow <on\|off>` | Also show it immediately when opening a past session (`/resume`, `/fork`, `pi -c`). |

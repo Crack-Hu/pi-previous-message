@@ -10,6 +10,9 @@
  *   "widget"  - above the input editor (part of the layout, covers nothing)
  *   "overlay" - floating window pinned to the top edge of the terminal
  *
+ * The message is kept on a single line whenever the available width can hold it;
+ * only longer messages fall back to the narrow, wrapped block.
+ *
  * Commands:
  *   /previous-message                          show the reminder now
  *   /previous-message hide                     hide it
@@ -26,7 +29,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import type { ExtensionAPI, ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
-import { mixColors, rgbColor, truncateToWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
+import { mixColors, rgbColor, truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 
 const WIDGET_KEY = "previous-message";
 /** Follows PI_CODING_AGENT_DIR when set, otherwise the default agent dir. */
@@ -254,6 +257,10 @@ function headerText(at: number, unit: TimeUnit): string {
 /**
  * Plain block: a one-third-width horizontal rule on top, a dim caption, then the text.
  * No box, no background — it should read as a page break, not as a dialog.
+ *
+ * When the whole message fits on one line at the full available width, the block
+ * uses the full page and the message stays unwrapped; longer messages keep the
+ * narrow wrapped layout.
  */
 function bannerLines(
 	theme: Theme,
@@ -268,21 +275,29 @@ function bannerLines(
 	const safeWidth = Math.max(12, width);
 	// Symmetric margins, so the block never touches either edge.
 	const usable = Math.max(8, safeWidth - CONTENT_MARGIN * 2);
+	const textWidth = Math.max(4, usable - 1);
+	// Whole message fits on one line: use the full page width so it stays
+	// unwrapped. Otherwise fall back to the narrow block:
 	// Narrow: fill the page (margins only). Middle: two thirds of it.
 	// Wide: stop at MAX_CONTENT_WIDTH.
+	const singleLine = visibleWidth(text) <= textWidth;
 	const preferred = Math.round((usable * 2) / 3);
-	const contentWidth =
+	const narrowWidth =
 		preferred < MIN_CONTENT_WIDTH ? usable : Math.min(MAX_CONTENT_WIDTH, preferred);
+	const contentWidth = singleLine ? usable : narrowWidth;
 	const ruleWidth = Math.max(8, Math.floor(contentWidth / 3));
 	const indent = " ".repeat(CONTENT_INDENT);
 	// Caption and body hang one space further in than the rule.
 	const textIndent = " ".repeat(CONTENT_INDENT + 1);
 	const paintCaption = tonePainter(theme, captionBrightness);
 	const paintBody = tonePainter(theme, bodyBrightness);
+	const body = singleLine
+		? [truncateToWidth(text, textWidth, "…")]
+		: bodyLines(text, Math.max(4, contentWidth - 1), maxLines);
 	return [
 		indent + paintCaption("─".repeat(ruleWidth)),
 		textIndent + paintCaption(truncateToWidth(headerText(at, unit), contentWidth - 1, "…")),
-		...bodyLines(text, Math.max(4, contentWidth - 1), maxLines).map((line) => textIndent + paintBody(line)),
+		...body.map((line) => textIndent + paintBody(line)),
 	];
 }
 
